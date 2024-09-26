@@ -28,13 +28,15 @@ This API is built using FastAPI and is designed to predict the outcome of a loan
    pip install -r requirements.txt
    ```
 
-3. Set up the environment variables:
-   ```bash
-   export DB_HOST
-   export DB_PORT
-   export DB_NAME
-   export DB_USER
-   export DB_PASSWORD
+3. Set up the environment variables in main.py:
+   ``` 
+   db_params = {
+       'host': '',
+       'port': '',
+       'database': '',
+       'user': '',
+       'password': ''
+   }
    ```
 
 4. Ensure that the `best_model.pkl` and `scaler.pkl` files are in the project directory.
