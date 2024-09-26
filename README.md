@@ -19,8 +19,8 @@ This API is built using FastAPI and is designed to predict the outcome of a loan
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/loan-outcome-api.git
-   cd loan-outcome-api
+   git clone https://github.com/priyasharma2323/ml-assignment.git
+   cd ml-assignment
    ```
 
 2. Install the required packages:
