@@ -10,7 +10,6 @@ from datetime import datetime
 
 app = FastAPI()
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -28,13 +27,12 @@ except Exception as e:
     model = None
     scaler = None
 
-# Database connection parameters (Use environment variables)
 db_params = {
-    'host': 'branchhomeworkdb.cv8nj4hg6yra.ap-south-1.rds.amazonaws.com',
-    'port': '5432',
-    'database': 'branchdsprojectgps',
-    'user': 'datascientist',
-    'password': '47eyYBLT0laW5j9U24Uuy8gLcrN'
+    'host': '',
+    'port': '',
+    'database': '',
+    'user': '',
+    'password': ''
 }
 
 def fetch_user_data(user_id):
@@ -44,10 +42,8 @@ def fetch_user_data(user_id):
     """
     conn = None
     try:
-        # Establish database connection
         conn = psycopg2.connect(**db_params)
 
-        # Fetch user_attributes
         user_attributes_query = """
         SELECT age, cash_incoming_30days
         FROM user_attributes WHERE user_id = %s;
@@ -58,7 +54,6 @@ def fetch_user_data(user_id):
             logger.error(f"No user attributes found for user_id: {user_id}")
             return None
 
-        # Fetch loan application data to extract application_dayofweek and application_hour
         loan_outcomes_query = """
         SELECT application_at
         FROM loan_outcomes WHERE user_id = %s;
@@ -69,12 +64,10 @@ def fetch_user_data(user_id):
             logger.error(f"No loan data found for user_id: {user_id}")
             return None
 
-        # Convert application_at to datetime and extract features
         loan_data['application_at'] = pd.to_datetime(loan_data['application_at'])
-        user_attributes['application_dayofweek'] = loan_data['application_at'].dt.dayofweek  # Monday=0, Sunday=6
+        user_attributes['application_dayofweek'] = loan_data['application_at'].dt.dayofweek  
         user_attributes['application_hour'] = loan_data['application_at'].dt.hour
 
-        # Fetch gps_fixes data to compute gps_fix_count and avg_accuracy
         gps_fixes_query = """
         SELECT accuracy
         FROM gps_fixes WHERE user_id = %s;
@@ -83,9 +76,8 @@ def fetch_user_data(user_id):
 
         if gps_data.empty:
             logger.error(f"No GPS data found for user_id: {user_id}")
-            # Set default values or handle as needed
             user_attributes['gps_fix_count'] = 0
-            user_attributes['avg_accuracy'] = None  # Or a default value
+            user_attributes['avg_accuracy'] = None  
         else:
             user_attributes['gps_fix_count'] = len(gps_data)
             user_attributes['avg_accuracy'] = gps_data['accuracy'].mean()
@@ -97,7 +89,6 @@ def fetch_user_data(user_id):
         return None
 
     finally:
-        # Close the connection
         if conn:
             conn.close()
 
@@ -113,29 +104,23 @@ def predict_loan_outcome(user: UserID):
         logger.error("Model or scaler not loaded.")
         raise HTTPException(status_code=500, detail="Model or scaler not loaded.")
 
-    # Fetch data from the database
     input_data = fetch_user_data(user.user_id)
     
     if input_data is None:
         logger.error(f"User data not found for user_id: {user.user_id}")
         raise HTTPException(status_code=404, detail="User data not found.")
 
-    # Feature selection
     features = ['age', 'cash_incoming_30days', 'gps_fix_count', 'avg_accuracy', 'application_dayofweek', 'application_hour']
 
-    # Check if all required features are present
     missing_features = [feature for feature in features if feature not in input_data.columns]
     if missing_features:
         logger.error(f"Incomplete data for prediction. Missing features: {missing_features}")
         raise HTTPException(status_code=500, detail=f"Incomplete data for prediction. Missing features: {missing_features}")
 
-    # Handle missing values (if any)
-    input_data.fillna(0, inplace=True)  # Or use a more appropriate method
+    input_data.fillna(0, inplace=True)  
 
-    # Scale the input data
     scaled_input = scaler.transform(input_data[features])
 
-    # Make the prediction
     try:
         prediction = model.predict(scaled_input)[0]
         probability = model.predict_proba(scaled_input)[0][1]
